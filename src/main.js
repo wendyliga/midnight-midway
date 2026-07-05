@@ -107,10 +107,10 @@ function loadSave() {
 function normSettings(s) {
   s = s || {};
   return {
-    gutters: s.gutters !== false,  // open side channels that swallow coins
-    pins: s.pins !== false,        // brass deflector pins that scatter the pile
-    ring: s.ring !== false,        // the lucky ring that pays ×3
-    volley: s.volley !== false,    // the volley skill (multi-coin drop)
+    gutters: s.gutters !== false,  // house edge: open side channels that swallow coins
+    pins: s.pins !== false,        // house edge: brass deflector pins scatter the pile
+    ring: s.ring === true,         // player-favoring extra: the lucky ring pays ×3
+    volley: s.volley === true,     // player-favoring extra: multi-coin volley drop
   };
 }
 let saveTimer = 0;
