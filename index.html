@@ -22,9 +22,9 @@
 <meta property="og:description" content="After-hours penny falls. A coin-dozer simulator with real physics — one hot tungsten spotlight in the dark.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Midnight Midway">
-<meta property="og:url" content="https://wendyliga.github.io/midnight-midway/">
-<meta property="og:image" content="https://wendyliga.github.io/midnight-midway/preview.jpg">
-<meta property="og:image:secure_url" content="https://wendyliga.github.io/midnight-midway/preview.jpg">
+<meta property="og:url" content="https://midnight-midway.wendyliga.com/">
+<meta property="og:image" content="https://midnight-midway.wendyliga.com/preview.jpg">
+<meta property="og:image:secure_url" content="https://midnight-midway.wendyliga.com/preview.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -32,7 +32,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Midnight Midway">
 <meta name="twitter:description" content="After-hours penny falls — a coin-dozer simulator with real physics.">
-<meta name="twitter:image" content="https://wendyliga.github.io/midnight-midway/preview.jpg">
+<meta name="twitter:image" content="https://midnight-midway.wendyliga.com/preview.jpg">
 <style>
   :root {
     --gold: #e8c476;
@@ -119,6 +119,13 @@
     white-space: nowrap;
   }
   #hint.gone { opacity: 0; }
+
+  #build-hash {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 9px; letter-spacing: 0.18em; text-transform: lowercase;
+    color: rgba(232,196,118,0.22); pointer-events: none; white-space: nowrap;
+  }
 
   #tipjar {
     position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%);
@@ -362,6 +369,7 @@
     </div>
     <div id="toasts"></div>
     <div id="fx"></div>
+    <div id="build-hash">build %VITE_BUILD_HASH%</div>
   </div>
 
   <div id="controls">

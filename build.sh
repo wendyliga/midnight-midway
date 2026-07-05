@@ -15,6 +15,10 @@ fi
 echo "Rendering icons and social preview into public/ ..."
 node scripts/gen-icons.mjs
 
+# Stamp the build with the current git commit so the hash is visible in-game.
+export VITE_BUILD_HASH="$(git rev-parse --short=8 HEAD 2>/dev/null || echo 'dev')"
+echo "Build hash: $VITE_BUILD_HASH"
+
 # Build the site into ./dist. Extra args pass through to Vite,
 # e.g. ./build.sh --base=/midnight-midway/
 echo ""
