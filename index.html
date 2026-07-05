@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Midnight Midway — After-Hours Penny Falls</title>
+<meta name="description" content="An after-hours coin-dozer simulator. Real physics, threaded lucky rings, a moving pusher, and a single tungsten spotlight in the dark. Runs offline from one HTML file.">
+<meta name="theme-color" content="#04050a">
+
+<!-- Favicons — real PNG/ICO files served next to the HTML, with a data-URI
+     SVG fallback for the case where index.html is opened alone from disk. -->
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png">
+<link rel="icon" href="./favicon.ico" sizes="any">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+<link rel="manifest" href="./manifest.webmanifest">
+
+<!-- Open Graph & Twitter — WhatsApp, iMessage, Slack, Discord, Twitter etc.
+     og:image must be an absolute URL, so we bake in the deploy origin. -->
+<meta property="og:title" content="Midnight Midway">
+<meta property="og:description" content="After-hours penny falls. A coin-dozer simulator with real physics — one hot tungsten spotlight in the dark.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Midnight Midway">
+<meta property="og:url" content="https://wendyliga.github.io/midnight-midway/">
+<meta property="og:image" content="https://wendyliga.github.io/midnight-midway/preview.jpg">
+<meta property="og:image:secure_url" content="https://wendyliga.github.io/midnight-midway/preview.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Midnight Midway — after-hours penny falls">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Midnight Midway">
+<meta name="twitter:description" content="After-hours penny falls — a coin-dozer simulator with real physics.">
+<meta name="twitter:image" content="https://wendyliga.github.io/midnight-midway/preview.jpg">
+<style>
+  :root {
+    --gold: #e8c476;
+    --gold-dim: #9b8a6a;
+    --cream: #f2e5c4;
+    --bg: #04050a;
+    --serif: "Palatino Linotype", "Iowan Old Style", Palatino, Georgia, "Times New Roman", serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: var(--serif);
+    color: var(--cream);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; touch-action: none; }
+
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    background:
+      radial-gradient(ellipse 90% 80% at 50% 42%, transparent 55%, rgba(0,0,0,0.55) 100%),
+      linear-gradient(to bottom, rgba(0,0,0,0.35), transparent 18%, transparent 82%, rgba(0,0,0,0.5));
+  }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+  #hud > * { pointer-events: auto; }
+
+  #purse {
+    position: absolute; top: 18px; left: 22px;
+    pointer-events: none;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  }
+  #balance {
+    font-size: 34px; letter-spacing: 0.08em; color: var(--gold);
+    font-variant-numeric: tabular-nums;
+    display: flex; align-items: center; gap: 10px;
+    transition: transform 0.12s;
+  }
+  #balance.bump { transform: scale(1.12); }
+  #balance.shake { animation: shake 0.35s; color: #d96a5a; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); } 40% { transform: translateX(5px); }
+    60% { transform: translateX(-4px); } 80% { transform: translateX(3px); }
+  }
+  #balance .coin-ico {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #f5d98a, #d9a441 60%, #8a6420);
+    box-shadow: 0 0 12px rgba(217,164,65,0.5), inset 0 0 0 2.5px rgba(122,90,30,0.8);
+    flex: none;
+  }
+  #subline {
+    margin-top: 6px; font-size: 13px; letter-spacing: 0.14em;
+    color: var(--gold-dim); text-transform: uppercase;
+  }
+
+  #controls {
+    position: fixed; top: 18px; right: 20px; z-index: 40;
+    display: flex; gap: 10px; pointer-events: auto;
+  }
+  #controls button {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(10,8,4,0.55); border: 1px solid rgba(232,196,118,0.35);
+    color: var(--gold); font-size: 19px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.4s;
+    font-family: var(--serif);
+  }
+  #controls button:hover { border-color: var(--gold); box-shadow: 0 0 14px rgba(232,196,118,0.25); }
+  #home { font-size: 18px; }
+  #help { font-size: 21px; }
+  #home[hidden] { display: none; }
+
+  #hint {
+    position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%);
+    font-size: 14px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold-dim); pointer-events: none;
+    text-shadow: 0 2px 6px #000;
+    transition: opacity 1.2s;
+    white-space: nowrap;
+  }
+  #hint.gone { opacity: 0; }
+
+  #tipjar {
+    position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%);
+    font-family: var(--serif); font-size: 16px; letter-spacing: 0.12em;
+    padding: 12px 26px; cursor: pointer;
+    color: var(--cream); background: rgba(26,12,14,0.82);
+    border: 1px solid var(--gold); border-radius: 3px;
+    text-transform: uppercase;
+    box-shadow: 0 0 22px rgba(232,196,118,0.25), inset 0 0 18px rgba(232,196,118,0.08);
+    animation: breathe 2.2s ease-in-out infinite;
+  }
+  #tipjar b { color: var(--gold); }
+  #tipjar:disabled {
+    animation: none; cursor: default; opacity: 0.55;
+    border-color: rgba(232,196,118,0.3); box-shadow: none;
+  }
+  #tipjar[hidden] { display: none; }
+  @keyframes breathe {
+    0%,100% { box-shadow: 0 0 14px rgba(232,196,118,0.18), inset 0 0 18px rgba(232,196,118,0.06); }
+    50% { box-shadow: 0 0 30px rgba(232,196,118,0.4), inset 0 0 18px rgba(232,196,118,0.14); }
+  }
+
+  #toasts {
+    position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    font-size: 26px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--gold); text-shadow: 0 0 18px rgba(232,196,118,0.55), 0 2px 6px #000;
+    animation: toast-in 2.4s forwards;
+    white-space: nowrap;
+  }
+  .toast.big { font-size: 40px; color: #ffd98a; }
+  @keyframes toast-in {
+    0% { opacity: 0; transform: translateY(14px) scale(0.92); }
+    12% { opacity: 1; transform: translateY(0) scale(1.04); }
+    18% { transform: scale(1); }
+    78% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-18px); }
+  }
+
+  #fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .pop {
+    position: absolute; font-size: 20px; color: var(--gold);
+    text-shadow: 0 0 10px rgba(232,196,118,0.7), 0 1px 4px #000;
+    animation: pop-up 1s forwards; transform: translate(-50%, -50%);
+    letter-spacing: 0.05em;
+  }
+  .pop.silver { color: #bfe8e0; }
+  .pop.red { color: #ff9a7a; font-size: 26px; }
+  .pop.charged {
+    color: #fff0c2; font-size: 24px;
+    text-shadow: 0 0 14px rgba(255,210,110,0.95), 0 0 30px rgba(255,180,60,0.6), 0 1px 4px #000;
+  }
+  @keyframes pop-up {
+    0% { opacity: 0; margin-top: 0; }
+    15% { opacity: 1; }
+    100% { opacity: 0; margin-top: -52px; }
+  }
+
+  #overlay {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #000; overflow: hidden;
+    transition: opacity 0.9s, visibility 0s 0.9s;
+  }
+  #overlay.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+  #overlay.gone * { animation-play-state: paused !important; }
+
+  /* The alleyway — slow push-in, drifting warm haze, a lamp that can't
+     quite hold its nerve, and film grain over everything. */
+  #alley {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; transform-origin: 46% 55%;
+    filter: brightness(0.92) saturate(1.08);
+    animation: kenburns 48s ease-in-out infinite alternate;
+  }
+  @keyframes kenburns {
+    from { transform: scale(1.06); }
+    to { transform: scale(1.22) translate(-2%, -2%); }
+  }
+  .fog {
+    position: absolute; width: 130%; height: 55%; left: -15%;
+    background: radial-gradient(ellipse at center, rgba(255,175,95,0.07), transparent 65%);
+    filter: blur(26px); mix-blend-mode: screen; pointer-events: none;
+  }
+  #fog1 { bottom: -6%; animation: drift1 47s ease-in-out infinite alternate; }
+  #fog2 { top: 12%; height: 45%; opacity: 0.7; animation: drift2 71s ease-in-out infinite alternate; }
+  @keyframes drift1 { from { transform: translateX(-6%); } to { transform: translateX(7%); } }
+  @keyframes drift2 { from { transform: translateX(5%); } to { transform: translateX(-8%); } }
+  #flicker {
+    position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+    background: radial-gradient(ellipse 60% 45% at 60% 72%, rgba(255,170,90,0.15), transparent 70%);
+    animation: lamp 11s steps(1, end) infinite;
+  }
+  @keyframes lamp {
+    0% { opacity: 0.8; } 6% { opacity: 0.95; } 7.2% { opacity: 0.45; } 8% { opacity: 0.9; }
+    36% { opacity: 0.82; } 37% { opacity: 0.55; } 37.8% { opacity: 0.95; }
+    62% { opacity: 0.85; } 78% { opacity: 0.65; } 79% { opacity: 0.95; } 100% { opacity: 0.8; }
+  }
+  #grain {
+    position: absolute; inset: -10px; pointer-events: none; opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grainJump 0.8s steps(4) infinite;
+  }
+  @keyframes grainJump {
+    0% { transform: translate(0, 0); } 25% { transform: translate(-6px, 4px); }
+    50% { transform: translate(4px, -6px); } 75% { transform: translate(-3px, -3px); }
+    100% { transform: translate(0, 0); }
+  }
+  #menu-box {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding: 46px 72px;
+    background: radial-gradient(ellipse at center, rgba(3,3,7,0.6) 30%, transparent 75%);
+  }
+  #overlay h1 {
+    font-size: clamp(30px, 6vw, 58px); font-weight: 500;
+    letter-spacing: 0.32em; text-indent: 0.32em; color: var(--gold);
+    text-shadow: 0 0 34px rgba(232,196,118,0.4), 0 0 90px rgba(232,196,118,0.18);
+    text-align: center;
+  }
+  #overlay .tag {
+    font-size: 15px; letter-spacing: 0.42em; text-indent: 0.42em;
+    text-transform: uppercase; color: var(--gold-dim); text-align: center;
+  }
+  #overlay .rule {
+    width: 220px; height: 1px; margin: 12px 0;
+    background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
+  }
+  #boot { font-size: 13px; letter-spacing: 0.2em; color: #6a6152; text-transform: uppercase; }
+  #enter {
+    margin-top: 10px; padding: 14px 34px;
+    font-family: var(--serif); font-size: 16px; letter-spacing: 0.28em; text-indent: 0.28em;
+    text-transform: uppercase; color: var(--cream); cursor: pointer;
+    background: rgba(4,4,8,0.45); border: 1px solid var(--gold); border-radius: 2px;
+    transition: background 0.25s, box-shadow 0.25s;
+    animation: breathe 2.6s ease-in-out infinite;
+  }
+  #enter:hover { background: rgba(232,196,118,0.12); }
+  #enter[hidden] { display: none; }
+
+  /* Field guide modal */
+  #helpModal {
+    position: fixed; inset: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(2,2,5,0.7); backdrop-filter: blur(4px);
+  }
+  #helpModal[hidden] { display: none; }
+  #helpCard {
+    width: min(560px, 92vw); max-height: 84vh; overflow-y: auto; position: relative;
+    background: linear-gradient(160deg, #191016, #0d0a0e);
+    border: 1px solid rgba(232,196,118,0.45); border-radius: 6px;
+    padding: 30px 34px 24px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.85), inset 0 0 40px rgba(232,196,118,0.04);
+  }
+  #helpCard h2 {
+    font-size: 19px; font-weight: 500; letter-spacing: 0.3em; text-indent: 0.3em;
+    color: var(--gold); text-align: center; margin-bottom: 6px;
+  }
+  #helpCard .sub {
+    text-align: center; font-size: 11.5px; letter-spacing: 0.22em;
+    color: var(--gold-dim); text-transform: uppercase; margin-bottom: 14px;
+  }
+  .h-row {
+    display: flex; align-items: center; gap: 18px;
+    padding: 11px 4px; border-top: 1px solid rgba(232,196,118,0.12);
+  }
+  .h-row img { width: 58px; height: 58px; flex: none; }
+  .h-row b {
+    display: block; font-size: 14px; letter-spacing: 0.14em;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 3px;
+  }
+  .h-row p { font-size: 13.5px; line-height: 1.5; color: #cbbf9f; }
+  #helpClose {
+    position: absolute; top: 12px; right: 14px; width: 34px; height: 34px;
+    border-radius: 50%; background: none; cursor: pointer;
+    border: 1px solid rgba(232,196,118,0.3); color: var(--gold); font-size: 17px;
+  }
+  #helpClose:hover { border-color: var(--gold); }
+
+  /* Volley button — silver progress ring set from JS, so it reads as
+     a distinct "skill charge" rather than another gold coin. */
+  #volleyWrap {
+    position: absolute; right: 24px; bottom: 40px;
+    width: 68px; height: 68px; border-radius: 50%; padding: 4px;
+    background: conic-gradient(rgba(200,215,230,0.16) 0%, rgba(200,215,230,0.16) 0%);
+    cursor: pointer;
+  }
+  #volley {
+    width: 100%; height: 100%; border-radius: 50%; border: none; cursor: pointer;
+    background: radial-gradient(circle at 35% 30%, #1a1e26, #0a0d12 70%);
+    color: #6f7a86; font-family: var(--serif);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  }
+  #volley .dots { font-size: 8px; letter-spacing: 2px; }
+  #volley .vlabel { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; }
+  #volley.ready { color: #d8e2ee; animation: silverBreathe 2.2s ease-in-out infinite; }
+  @keyframes silverBreathe {
+    0%,100% { box-shadow: 0 0 14px rgba(200,220,240,0.18), inset 0 0 18px rgba(200,220,240,0.06); }
+    50% { box-shadow: 0 0 30px rgba(200,220,240,0.45), inset 0 0 18px rgba(200,220,240,0.16); }
+  }
+  #volleyPips {
+    position: absolute; bottom: -17px; width: 100%; text-align: center;
+    color: #d8e2ee; font-size: 9px; letter-spacing: 4px;
+    text-shadow: 0 0 8px rgba(200,220,240,0.65);
+  }
+
+  @media (max-width: 520px) {
+    #balance { font-size: 26px; }
+    #hint { font-size: 11px; letter-spacing: 0.16em; }
+    .toast { font-size: 19px; }
+    .toast.big { font-size: 30px; }
+    #controls { top: 14px; right: 14px; gap: 8px; }
+    #controls button { width: 38px; height: 38px; font-size: 16px; }
+    #help { font-size: 18px; }
+    #volleyWrap { right: 14px; bottom: 76px; width: 60px; height: 60px; }
+    #menu-box { padding: 36px 30px; }
+    #helpCard { padding: 26px 20px 18px; }
+  }
+</style>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="vignette"></div>
+
+  <div id="hud">
+    <div id="purse">
+      <div id="balance"><span class="coin-ico"></span><span id="bal-num">30</span></div>
+      <div id="subline"></div>
+    </div>
+    <div id="hint">slide to aim &nbsp;&middot;&nbsp; click to drop</div>
+    <button id="tipjar" hidden></button>
+    <div id="volleyWrap" title="volley — press V">
+      <button id="volley">
+        <span class="dots">&#9679; &#9679; &#9679; &#9679; &#9679;</span>
+        <span class="vlabel">volley</span>
+      </button>
+      <div id="volleyPips"></div>
+    </div>
+    <div id="toasts"></div>
+    <div id="fx"></div>
+  </div>
+
+  <div id="controls">
+    <button id="home" title="back to the alley" hidden>&#8962;</button>
+    <button id="help" title="how the machine pays">?</button>
+    <button id="mute" title="toggle sound">&#9835;</button>
+  </div>
+
+  <div id="helpModal" hidden>
+    <div id="helpCard">
+      <button id="helpClose" title="close">&#215;</button>
+      <h2>HOW THE MACHINE PAYS</h2>
+      <p class="sub">a field guide for night visitors</p>
+      <div id="helpBody"></div>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <img id="alley" src="./assets/alley.jpg" alt="">
+    <div class="fog" id="fog1"></div>
+    <div class="fog" id="fog2"></div>
+    <div id="flicker"></div>
+    <div id="grain"></div>
+    <div id="menu-box">
+      <h1>MIDNIGHT MIDWAY</h1>
+      <p class="tag">after-hours penny falls</p>
+      <div class="rule"></div>
+      <p id="boot">warming up the machine&hellip;</p>
+      <button id="enter" hidden>step up to the machine</button>
+    </div>
+  </div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
