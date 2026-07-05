@@ -50,4 +50,4 @@ The build uses a relative Vite base (`./`), so the game works from a domain root
 
 ## License
 
-No license file is currently included.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
