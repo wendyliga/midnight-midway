@@ -84,7 +84,8 @@ const ringColliders = [];   // the lucky ring's physics segments
 const els = {};
 ['balance', 'bal-num', 'subline', 'mute', 'help', 'home', 'helpModal', 'helpBody',
  'helpClose', 'hint', 'tipjar', 'volley', 'volleyWrap', 'volleyPips',
- 'toasts', 'fx', 'overlay', 'boot', 'enter', 'rules', 'reset', 'stage'].forEach(id => {
+ 'toasts', 'fx', 'overlay', 'boot', 'enter', 'rules', 'reset', 'stage',
+ 'credits-btn', 'creditsModal', 'creditsClose'].forEach(id => {
   els[id.replace(/-/g, '_')] = document.getElementById(id);
 });
 
@@ -140,6 +141,7 @@ async function boot() {
   bindUI();
   els.boot.textContent = 'the machine is running';
   els.enter.hidden = false;
+  els.reset.hidden = false;
   els.rules.hidden = false;
   requestAnimationFrame(tick);
 }
@@ -1221,6 +1223,10 @@ function bindUI() {
       if (e.code === 'Escape') closeHelp();
       return;
     }
+    if (!els.creditsModal.hidden) {
+      if (e.code === 'Escape') els.creditsModal.hidden = true;
+      return;
+    }
     if (e.code === 'ArrowLeft') { aimTarget = Math.max(-AIM_MAX, aimTarget - 1.6); e.preventDefault(); }
     else if (e.code === 'ArrowRight') { aimTarget = Math.min(AIM_MAX, aimTarget + 1.6); e.preventDefault(); }
     else if (e.code === 'Space') { tryDrop(); e.preventDefault(); }
@@ -1233,6 +1239,14 @@ function bindUI() {
   els.helpClose.addEventListener('click', closeHelp);
   els.helpModal.addEventListener('click', (e) => {
     if (e.target === els.helpModal) closeHelp();
+  });
+
+  const openCredits = () => { els.creditsModal.hidden = false; };
+  const closeCredits = () => { els.creditsModal.hidden = true; };
+  els.credits_btn.addEventListener('click', openCredits);
+  els.creditsClose.addEventListener('click', closeCredits);
+  els.creditsModal.addEventListener('click', (e) => {
+    if (e.target === els.creditsModal) closeCredits();
   });
 
   els.volleyWrap.addEventListener('click', dropVolley);

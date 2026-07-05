@@ -327,50 +327,90 @@
     .r-desc { min-height: 0; }
   }
 
-  /* Credits — a quiet footnote at the bottom of the alley, only on the menu */
-  #credits {
-    width: min(720px, 92vw); margin: 28px auto 12px;
-    text-align: center; color: #7a7161;
-    font-family: var(--serif);
-  }
-  .cr-rule {
-    width: 120px; height: 1px; margin: 0 auto 14px;
-    background: linear-gradient(to right, transparent, rgba(232,196,118,0.35), transparent);
-  }
-  .cr-head {
-    font-size: 10px; letter-spacing: 0.36em; text-indent: 0.36em;
-    text-transform: uppercase; color: var(--gold-dim);
-    margin-bottom: 10px;
-  }
-  #credits p {
-    font-size: 12px; line-height: 1.65; margin: 2px 0;
-    color: #8a8072; letter-spacing: 0.02em;
-  }
-  #credits a {
-    color: var(--gold); text-decoration: none;
-    border-bottom: 1px solid rgba(232,196,118,0.25);
-    transition: color 0.2s, border-color 0.2s;
-  }
-  #credits a:hover { color: var(--cream); border-bottom-color: var(--gold); }
-
+  /* Reset control — lives under the "step up" CTA, matches its width so the
+     eye reads it as the destructive counterpart. Muted by default; two-step
+     confirmation lights it red before it fires. */
   #reset {
-    display: inline-block; margin-top: 18px; padding: 8px 20px;
-    font-family: var(--serif); font-size: 11px;
-    letter-spacing: 0.28em; text-indent: 0.28em; text-transform: uppercase;
-    color: #6a6152; background: transparent;
-    border: 1px solid rgba(155,138,106,0.28); border-radius: 2px;
-    cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s;
+    display: block; margin: 6px auto 0; padding: 11px 24px;
+    font-family: var(--serif); font-size: 12.5px;
+    letter-spacing: 0.22em; text-indent: 0.22em; text-transform: uppercase;
+    color: #b5a68a; background: rgba(4,4,8,0.4);
+    border: 1px solid rgba(155,138,106,0.32); border-radius: 2px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
   }
-  #reset:hover { color: #d96a5a; border-color: rgba(217,106,90,0.55); }
+  #reset[hidden] { display: none; }
+  #reset:hover { color: #f2c9a8; border-color: rgba(217,106,90,0.55); background: rgba(217,106,90,0.08); }
   #reset.arm {
-    color: #f2e5c4; border-color: #d96a5a;
-    background: rgba(217,106,90,0.12);
+    color: #fff5e6; border-color: #d96a5a;
+    background: rgba(217,106,90,0.16);
     animation: resetPulse 0.9s ease-in-out infinite;
   }
   @keyframes resetPulse {
     0%, 100% { box-shadow: 0 0 0 rgba(217,106,90,0.0); }
-    50%      { box-shadow: 0 0 18px rgba(217,106,90,0.35); }
+    50%      { box-shadow: 0 0 22px rgba(217,106,90,0.4); }
   }
+
+  /* Credits modal — reuses the field-guide modal chrome for consistency. */
+  #creditsModal {
+    position: fixed; inset: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(2,2,5,0.7); backdrop-filter: blur(4px);
+  }
+  #creditsModal[hidden] { display: none; }
+  #creditsCard {
+    width: min(560px, 92vw); max-height: 84vh; overflow-y: auto; position: relative;
+    background: linear-gradient(160deg, #191016, #0d0a0e);
+    border: 1px solid rgba(232,196,118,0.45); border-radius: 6px;
+    padding: 30px 34px 22px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.85), inset 0 0 40px rgba(232,196,118,0.04);
+  }
+  #creditsCard h2 {
+    font-size: 19px; font-weight: 500; letter-spacing: 0.3em; text-indent: 0.3em;
+    color: var(--gold); text-align: center; margin-bottom: 6px;
+  }
+  #creditsCard .sub {
+    text-align: center; font-size: 11.5px; letter-spacing: 0.22em;
+    color: var(--gold-dim); text-transform: uppercase; margin-bottom: 16px;
+  }
+  #creditsClose {
+    position: absolute; top: 12px; right: 14px; width: 34px; height: 34px;
+    border-radius: 50%; background: none; cursor: pointer;
+    border: 1px solid rgba(232,196,118,0.3); color: var(--gold); font-size: 17px;
+  }
+  #creditsClose:hover { border-color: var(--gold); }
+  .cm-row {
+    display: flex; gap: 16px; align-items: baseline;
+    padding: 11px 4px; border-top: 1px solid rgba(232,196,118,0.12);
+  }
+  .cm-role {
+    flex: none; width: 84px;
+    font-size: 10.5px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--gold-dim); padding-top: 3px;
+  }
+  .cm-body { flex: 1; min-width: 0; }
+  .cm-body b {
+    display: block; font-size: 14px; letter-spacing: 0.1em;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 3px;
+  }
+  .cm-body span { font-size: 13px; line-height: 1.5; color: #cbbf9f; }
+  .cm-body a {
+    color: var(--cream); text-decoration: none;
+    border-bottom: 1px solid rgba(242,229,196,0.35);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .cm-body a:hover { color: var(--gold); border-bottom-color: var(--gold); }
+  .cm-foot {
+    margin-top: 18px; padding-top: 12px;
+    border-top: 1px solid rgba(232,196,118,0.14);
+    text-align: center; font-size: 11px; letter-spacing: 0.14em;
+    color: #6a6152; text-transform: uppercase;
+  }
+  .cm-build {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    color: var(--gold-dim); letter-spacing: 0.18em; text-transform: lowercase;
+  }
+  .cm-sep { margin: 0 8px; }
 
   /* Field guide modal */
   #helpModal {
@@ -478,6 +518,7 @@
   <div id="controls">
     <button id="home" title="back to the alley" hidden>&#8962;</button>
     <button id="help" title="how the machine pays">?</button>
+    <button id="credits-btn" title="credits">&#9432;</button>
     <button id="mute" title="toggle sound">&#9835;</button>
   </div>
 
@@ -487,6 +528,54 @@
       <h2>HOW THE MACHINE PAYS</h2>
       <p class="sub">a field guide for night visitors</p>
       <div id="helpBody"></div>
+    </div>
+  </div>
+
+  <div id="creditsModal" hidden>
+    <div id="creditsCard">
+      <button id="creditsClose" title="close">&#215;</button>
+      <h2>CREDITS</h2>
+      <p class="sub">the credits and the borrowed things</p>
+      <div class="cm-row">
+        <div class="cm-role">Music</div>
+        <div class="cm-body">
+          <b>Background theme</b>
+          <span>by <a href="https://ilyas-ananas.itch.io/background-music" target="_blank" rel="noopener">ilyas-ananas</a> &middot; itch.io</span>
+        </div>
+      </div>
+      <div class="cm-row">
+        <div class="cm-role">Photo</div>
+        <div class="cm-body">
+          <b>Menu alleyway</b>
+          <span>by <a href="https://unsplash.com/photos/empty-street-between-buildings-during-daytime-TGSojbIny-8" target="_blank" rel="noopener">Aaron Chavez</a> &middot; Unsplash</span>
+        </div>
+      </div>
+      <div class="cm-row">
+        <div class="cm-role">Physics</div>
+        <div class="cm-body">
+          <b>Rapier</b>
+          <span>Rust &rarr; WASM rigid-body physics, running at 120&thinsp;Hz</span>
+        </div>
+      </div>
+      <div class="cm-row">
+        <div class="cm-role">Render</div>
+        <div class="cm-body">
+          <b>Three.js</b>
+          <span>WebGL, PCF soft shadows, ACES filmic tone mapping</span>
+        </div>
+      </div>
+      <div class="cm-row">
+        <div class="cm-role">Sound&nbsp;FX</div>
+        <div class="cm-body">
+          <b>Web Audio API</b>
+          <span>every clink, chime and jackpot synthesized live in-browser</span>
+        </div>
+      </div>
+      <div class="cm-foot">
+        <span class="cm-build">build %VITE_BUILD_HASH%</span>
+        <span class="cm-sep">&middot;</span>
+        <span>made after hours for the fun of it</span>
+      </div>
     </div>
   </div>
 
@@ -502,6 +591,7 @@
       <div class="rule"></div>
       <p id="boot">warming up the machine&hellip;</p>
       <button id="enter" hidden>step up to the machine</button>
+      <button id="reset" type="button" hidden>wipe the ledger &mdash; reset progress</button>
       <div id="rules" hidden>
         <div class="r-head">tonight's house rules — tap to switch on or off</div>
         <div class="r-grid">
@@ -530,13 +620,6 @@
             <div class="r-state">armed</div>
           </div>
         </div>
-      </div>
-      <div id="credits">
-        <div class="cr-rule"></div>
-        <div class="cr-head">credits</div>
-        <p>Background theme by <a href="https://ilyas-ananas.itch.io/background-music" target="_blank" rel="noopener">ilyas-ananas</a></p>
-        <p>Menu photo by <a href="https://unsplash.com/photos/empty-street-between-buildings-during-daytime-TGSojbIny-8" target="_blank" rel="noopener">Aaron Chavez</a> on Unsplash</p>
-        <button id="reset" type="button">wipe the ledger &mdash; reset progress</button>
       </div>
     </div>
   </div>
