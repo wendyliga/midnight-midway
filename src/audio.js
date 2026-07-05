@@ -1,4 +1,8 @@
-// All sound is synthesized with the Web Audio API — no assets, fully offline.
+// All SFX are synthesized with the Web Audio API — no assets, fully offline.
+// The background theme is a loaded mp3 (music by ilyas-ananas on itch.io);
+// Vite inlines it as a data URL so the single-file build still works offline.
+import bgmUrl from '../assets/bgm.mp3';
+
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 export class SoundEngine {
@@ -33,8 +37,14 @@ export class SoundEngine {
     }
   }
 
-  suspend() { if (this.ctx) this.ctx.suspend(); }
-  resume() { if (this.ctx && !this.muted) this.ctx.resume(); }
+  suspend() {
+    if (this.ctx) this.ctx.suspend();
+    if (this._bgmEl) this._bgmEl.pause();
+  }
+  resume() {
+    if (this.ctx && !this.muted) this.ctx.resume();
+    if (this._bgmEl && !this.muted) this._bgmEl.play().catch(() => {});
+  }
 
   _makeNoise() {
     const len = this.ctx.sampleRate;
@@ -82,53 +92,26 @@ export class SoundEngine {
     hum.start(); lfo.start();
   }
 
-  // Background music: a slow music-box waltz in A minor — the tune the
-  // machine hums to itself after the carnival closes. Scheduled against the
-  // audio clock; the master gain (mute) silences it like everything else.
+  // Background theme (bgm.mp3): looped through a MediaElementSource so it
+  // rides the same master gain as everything else — mute silences it too.
   _bgmStart() {
     const ctx = this.ctx;
     this.bgmGain = ctx.createGain();
-    this.bgmGain.gain.value = 0.85;
+    this.bgmGain.gain.value = 0.55;
     this.bgmGain.connect(this.master);
-    const BEAT = 60 / 84;                       // 84 BPM, 3/4 time
-    const mf = m => 440 * Math.pow(2, (m - 69) / 12);
-    // 16 bars: [bass midi, [chord tones], melody midi (0 = rest)]
-    const BARS = [
-      [45, [57, 60, 64], 69], [45, [57, 60, 64], 0],
-      [50, [62, 65, 69], 72], [50, [62, 65, 69], 74],
-      [52, [64, 68, 71], 71], [52, [64, 68, 71], 0],
-      [45, [57, 60, 64], 69], [45, [57, 60, 64], 0],
-      [53, [57, 60, 65], 72], [53, [57, 60, 65], 76],
-      [50, [62, 65, 69], 74], [50, [62, 65, 69], 72],
-      [52, [64, 68, 71], 71], [52, [64, 68, 71], 68],
-      [45, [57, 60, 64], 69], [45, [57, 60, 64], 0],
-    ];
-    this._bgmPos = 0;
-    this._bgmNext = ctx.currentTime + 0.6;
-    this._bgmTimer = setInterval(() => {
-      while (this._bgmNext < ctx.currentTime + 0.9) {
-        const t = this._bgmNext;
-        const bar = BARS[Math.floor(this._bgmPos / 3) % BARS.length];
-        const beat = this._bgmPos % 3;
-        if (beat === 0) {
-          this._tone(t, 1.3, mf(bar[0]), 0.04, this.bgmGain, 'sine');
-          if (bar[2]) this._mbox(t, mf(bar[2] + 12), 0.05);
-        } else {
-          const c = bar[1];
-          this._tone(t, 0.5, mf(c[beat === 1 ? 0 : 2]), 0.014, this.bgmGain, 'triangle');
-          this._tone(t, 0.5, mf(c[1]), 0.01, this.bgmGain, 'triangle');
-        }
-        this._bgmPos++;
-        this._bgmNext += BEAT;
-      }
-    }, 250);
-  }
-
-  // Music-box pluck: fundamental + a bright bell partial, faintly detuned.
-  _mbox(t, f, vol) {
-    const detune = 1 + (Math.random() - 0.5) * 0.002;
-    this._tone(t, 1.9, f * detune, vol, this.bgmGain, 'sine');
-    this._tone(t, 0.9, f * 3.98, vol * 0.16, this.bgmGain, 'sine');
+    const el = new Audio();
+    el.src = bgmUrl;
+    el.loop = true;
+    el.crossOrigin = 'anonymous';
+    this._bgmEl = el;
+    try {
+      this._bgmSrc = ctx.createMediaElementSource(el);
+      this._bgmSrc.connect(this.bgmGain);
+    } catch { /* Safari sometimes needs the element to have played first */ }
+    // Fade in so it doesn't slam on when the player unlocks audio.
+    this.bgmGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    this.bgmGain.gain.linearRampToValueAtTime(0.55, ctx.currentTime + 1.6);
+    el.play().catch(() => { /* the next user gesture will retry */ });
   }
 
   _burst(t, dur, freq, q, vol, out) {

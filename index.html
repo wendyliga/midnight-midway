@@ -327,6 +327,32 @@
     .r-desc { min-height: 0; }
   }
 
+  /* Credits — a quiet footnote at the bottom of the alley, only on the menu */
+  #credits {
+    width: min(720px, 92vw); margin: 28px auto 12px;
+    text-align: center; color: #7a7161;
+    font-family: var(--serif);
+  }
+  .cr-rule {
+    width: 120px; height: 1px; margin: 0 auto 14px;
+    background: linear-gradient(to right, transparent, rgba(232,196,118,0.35), transparent);
+  }
+  .cr-head {
+    font-size: 10px; letter-spacing: 0.36em; text-indent: 0.36em;
+    text-transform: uppercase; color: var(--gold-dim);
+    margin-bottom: 10px;
+  }
+  #credits p {
+    font-size: 12px; line-height: 1.65; margin: 2px 0;
+    color: #8a8072; letter-spacing: 0.02em;
+  }
+  #credits a {
+    color: var(--gold); text-decoration: none;
+    border-bottom: 1px solid rgba(232,196,118,0.25);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  #credits a:hover { color: var(--cream); border-bottom-color: var(--gold); }
+
   /* Field guide modal */
   #helpModal {
     position: fixed; inset: 0; z-index: 30;
@@ -485,6 +511,12 @@
             <div class="r-state">armed</div>
           </div>
         </div>
+      </div>
+      <div id="credits">
+        <div class="cr-rule"></div>
+        <div class="cr-head">credits</div>
+        <p>Background theme by <a href="https://ilyas-ananas.itch.io/background-music" target="_blank" rel="noopener">ilyas-ananas</a></p>
+        <p>Menu photo by <a href="https://unsplash.com/photos/empty-street-between-buildings-during-daytime-TGSojbIny-8" target="_blank" rel="noopener">Aaron Chavez</a> on Unsplash</p>
       </div>
     </div>
   </div>
