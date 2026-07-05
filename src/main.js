@@ -84,7 +84,7 @@ const ringColliders = [];   // the lucky ring's physics segments
 const els = {};
 ['balance', 'bal-num', 'subline', 'mute', 'help', 'home', 'helpModal', 'helpBody',
  'helpClose', 'hint', 'tipjar', 'volley', 'volleyWrap', 'volleyPips',
- 'toasts', 'fx', 'overlay', 'boot', 'enter', 'rules', 'stage'].forEach(id => {
+ 'toasts', 'fx', 'overlay', 'boot', 'enter', 'rules', 'reset', 'stage'].forEach(id => {
   els[id.replace(/-/g, '_')] = document.getElementById(id);
 });
 
@@ -1248,6 +1248,28 @@ function bindUI() {
     ring: ['swinging', 'stowed'],
     volley: ['armed', 'disarmed'],
   };
+  // "Wipe the ledger" — clears saved balance, drop count, house rules, mute.
+  // Two-step: first click arms it (turns red, "tap again"), second click wipes.
+  // A 3-second timeout defuses so an accidental first click doesn't linger.
+  let resetTimer = 0;
+  const defuseReset = () => {
+    clearTimeout(resetTimer);
+    els.reset.classList.remove('arm');
+    els.reset.textContent = 'wipe the ledger — reset progress';
+  };
+  els.reset.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!els.reset.classList.contains('arm')) {
+      els.reset.classList.add('arm');
+      els.reset.textContent = 'tap again to erase everything';
+      resetTimer = setTimeout(defuseReset, 3000);
+      return;
+    }
+    clearTimeout(resetTimer);
+    try { localStorage.removeItem('midway_save'); } catch { /* private mode */ }
+    location.reload();
+  });
+
   els.rules.querySelectorAll('.r-card').forEach(card => {
     const key = card.dataset.rule;
     const stateEl = card.querySelector('.r-state');
