@@ -64,6 +64,12 @@ let showerQueue = [];
 let burst = { count: 0, last: 0, xs: [] };
 let started = false;
 
+const DEFAULT_SETTINGS = {
+  gutters: false,
+  pins: false,
+  ring: true,
+  volley: true,
+};
 const save = loadSave();
 let balance = save.balance;
 let totalWon = save.totalWon;
@@ -104,14 +110,15 @@ function loadSave() {
     };
   } catch { return { balance: START_BALANCE, totalWon: 0, muted: false, lastTip: 0, drops: 0, vc: 0, vp: 0, settings: normSettings() }; }
 }
-// House-rule defaults: the machine as designed (full house edge) is the norm.
+// House-rule defaults: start with the player-favoring extras selected.
 function normSettings(s) {
   s = s || {};
+  const pick = key => typeof s[key] === 'boolean' ? s[key] : DEFAULT_SETTINGS[key];
   return {
-    gutters: s.gutters !== false,  // house edge: open side channels that swallow coins
-    pins: s.pins !== false,        // house edge: brass deflector pins scatter the pile
-    ring: s.ring === true,         // player-favoring extra: the lucky ring pays ×3
-    volley: s.volley === true,     // player-favoring extra: multi-coin volley drop
+    gutters: pick('gutters'),  // open side channels that swallow coins
+    pins: pick('pins'),        // brass deflector pins that scatter the pile
+    ring: pick('ring'),        // the lucky ring that pays ×3
+    volley: pick('volley'),    // the volley skill (multi-coin drop)
   };
 }
 let saveTimer = 0;

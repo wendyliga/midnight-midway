@@ -6,14 +6,21 @@
 <title>Midnight Midway — After-Hours Penny Falls</title>
 <meta name="description" content="An after-hours coin-dozer simulator. Real physics, threaded lucky rings, a moving pusher, and a single tungsten spotlight in the dark. Runs offline from one HTML file.">
 <meta name="theme-color" content="#04050a">
+<meta name="application-name" content="Midnight Midway">
+<meta name="apple-mobile-web-app-title" content="Midnight Midway">
+<meta name="msapplication-TileColor" content="#04050a">
+<link rel="canonical" href="https://midnight-midway.wendyliga.com/">
 
-<!-- Favicons — real PNG/ICO files served next to the HTML, with a data-URI
-     SVG fallback for the case where index.html is opened alone from disk. -->
+<!-- Favicons — root-level ICO/PNG/SVG files cover legacy, desktop, mobile,
+     pinned-tab, and installable-browser surfaces. -->
+<link rel="icon" href="./favicon.ico" sizes="any">
+<link rel="shortcut icon" href="./favicon.ico">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png">
-<link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+<link rel="mask-icon" href="./safari-pinned-tab.svg" color="#e8c476">
 <link rel="manifest" href="./manifest.webmanifest">
 
 <!-- Open Graph & Twitter — WhatsApp, iMessage, Slack, Discord, Twitter etc.
@@ -22,17 +29,21 @@
 <meta property="og:description" content="After-hours penny falls. A coin-dozer simulator with real physics — one hot tungsten spotlight in the dark.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Midnight Midway">
+<meta property="og:locale" content="en_US">
 <meta property="og:url" content="https://midnight-midway.wendyliga.com/">
 <meta property="og:image" content="https://midnight-midway.wendyliga.com/preview.jpg">
+<meta property="og:image:url" content="https://midnight-midway.wendyliga.com/preview.jpg">
 <meta property="og:image:secure_url" content="https://midnight-midway.wendyliga.com/preview.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Midnight Midway — after-hours penny falls">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://midnight-midway.wendyliga.com/">
 <meta name="twitter:title" content="Midnight Midway">
 <meta name="twitter:description" content="After-hours penny falls — a coin-dozer simulator with real physics.">
 <meta name="twitter:image" content="https://midnight-midway.wendyliga.com/preview.jpg">
+<meta name="twitter:image:alt" content="Midnight Midway — after-hours penny falls">
 <style>
   :root {
     --gold: #e8c476;
@@ -409,7 +420,10 @@
   .cm-build {
     font-family: "SF Mono", "Fira Code", "Consolas", monospace;
     color: var(--gold-dim); letter-spacing: 0.18em; text-transform: lowercase;
+    text-decoration: none; border-bottom: 1px solid rgba(232,196,118,0.24);
+    transition: color 0.2s, border-color 0.2s;
   }
+  .cm-build:hover { color: var(--gold); border-bottom-color: var(--gold); }
   .cm-sep { margin: 0 8px; }
 
   /* Field guide modal */
@@ -572,7 +586,7 @@
         </div>
       </div>
       <div class="cm-foot">
-        <span class="cm-build">build %VITE_BUILD_HASH%</span>
+        <a class="cm-build" href="%VITE_BUILD_HREF%" target="_blank" rel="noopener noreferrer">build %VITE_BUILD_HASH%</a>
         <span class="cm-sep">&middot;</span>
         <span>made after hours for the fun of it</span>
       </div>
@@ -595,17 +609,17 @@
       <div id="rules" hidden>
         <div class="r-head">tonight's house rules — tap to switch on or off</div>
         <div class="r-grid">
-          <div class="r-card" data-rule="gutters" role="switch" tabindex="0" aria-checked="true">
+          <div class="r-card" data-rule="gutters" role="switch" tabindex="0" aria-checked="false">
             <canvas class="r-art" width="112" height="112" data-art="gutters"></canvas>
             <div class="r-name">side gutters</div>
             <div class="r-desc">Open channels swallow stray coins.</div>
-            <div class="r-state">open</div>
+            <div class="r-state">sealed</div>
           </div>
-          <div class="r-card" data-rule="pins" role="switch" tabindex="0" aria-checked="true">
+          <div class="r-card" data-rule="pins" role="switch" tabindex="0" aria-checked="false">
             <canvas class="r-art" width="112" height="112" data-art="pins"></canvas>
             <div class="r-name">deflector pins</div>
             <div class="r-desc">Brass pins scatter the pile.</div>
-            <div class="r-state">installed</div>
+            <div class="r-state">pulled</div>
           </div>
           <div class="r-card" data-rule="ring" role="switch" tabindex="0" aria-checked="true">
             <canvas class="r-art" width="112" height="112" data-art="ring"></canvas>

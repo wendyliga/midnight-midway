@@ -48,6 +48,23 @@ await png(180, 'apple-touch-icon.png', true);
 await png(192, 'icon-192.png', true);
 await png(512, 'icon-512.png', true);
 
+// Maskable Android/PWA icon: same coin, but with enough padding to survive
+// circular, rounded-square, and squircle masks.
+const maskableSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
+  <rect width="100" height="100" fill="#04050a"/>
+  <g transform="translate(50 50) scale(0.74) translate(-50 -50)">
+    ${coinSvg(100, true).replace(/^[\s\S]*?<defs>/, '<defs>').replace('</svg>', '')}
+  </g>
+</svg>
+`.trim();
+
+await sharp(Buffer.from(maskableSvg))
+  .resize(512, 512)
+  .png({ compressionLevel: 9 })
+  .toFile(path.join(outDir, 'icon-maskable-512.png'));
+console.log('  icon-maskable-512.png  512×512');
+
 // Multi-resolution .ico for legacy Windows / older browsers.
 const icoBuf = await pngToIco([16, 32, 48].map(s => path.join(outDir, `favicon-${s}.png`)));
 fs.writeFileSync(path.join(outDir, 'favicon.ico'), icoBuf);
@@ -56,6 +73,15 @@ console.log('  favicon.ico  16/32/48');
 // SVG favicon — modern browsers (Chrome/Firefox/Edge) prefer this.
 fs.writeFileSync(path.join(outDir, 'favicon.svg'), coinSvg(64, true) + '\n');
 console.log('  favicon.svg');
+
+// Safari pinned tabs require a monochrome mask icon.
+fs.writeFileSync(path.join(outDir, 'safari-pinned-tab.svg'), `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="46" fill="#000"/>
+  <path d="M50 22 L58 42 L80 42 L62 55 L69 76 L50 63 L31 76 L38 55 L20 42 L42 42 Z" fill="#fff"/>
+</svg>
+`.trim() + '\n');
+console.log('  safari-pinned-tab.svg');
 
 // 1200×630 OG preview. A hand-composed frame: alley photo darkened as
 // backdrop, a wall of coins along the bottom, and the title over a spotlight.
@@ -102,7 +128,7 @@ const titleSvg = `
     </filter>
   </defs>
   <g transform="translate(600 250)" text-anchor="middle" font-family="Palatino, 'Palatino Linotype', Georgia, serif" fill="#e8c476" filter="url(#glow)">
-    <text font-size="86" letter-spacing="24" font-weight="500">MIDNIGHT MIDWAY</text>
+    <text font-size="72" letter-spacing="14" font-weight="500">MIDNIGHT MIDWAY</text>
   </g>
   <g transform="translate(600 320)" text-anchor="middle" font-family="Palatino, Georgia, serif" fill="#9b8a6a">
     <text font-size="26" letter-spacing="14">AFTER-HOURS PENNY FALLS</text>
