@@ -73,10 +73,18 @@ let volleyCharges = save.vc;
 let volleyProgress = save.vp;
 let volleyCooldown = 0;
 
+// House rules — bendable on the menu. Each maps to a real physical part of the
+// machine; toggling one enables/disables its meshes and colliders live.
+const SETTINGS = save.settings;
+const pegHandles = [];      // brass deflector pins  { mesh, col }
+const gutterGlows = [];     // red danger strips (shown only when gutters open)
+const gutterCovers = [];    // rails that seal the side channels  { mesh, col }
+const ringColliders = [];   // the lucky ring's physics segments
+
 const els = {};
 ['balance', 'bal-num', 'subline', 'mute', 'help', 'home', 'helpModal', 'helpBody',
  'helpClose', 'hint', 'tipjar', 'volley', 'volleyWrap', 'volleyPips',
- 'toasts', 'fx', 'overlay', 'boot', 'enter', 'stage'].forEach(id => {
+ 'toasts', 'fx', 'overlay', 'boot', 'enter', 'rules', 'stage'].forEach(id => {
   els[id.replace(/-/g, '_')] = document.getElementById(id);
 });
 
@@ -91,8 +99,19 @@ function loadSave() {
       drops: s.drops || 0,
       vc: s.vc || 0,
       vp: s.vp || 0,
+      settings: normSettings(s.settings),
     };
-  } catch { return { balance: START_BALANCE, totalWon: 0, muted: false, lastTip: 0, drops: 0, vc: 0, vp: 0 }; }
+  } catch { return { balance: START_BALANCE, totalWon: 0, muted: false, lastTip: 0, drops: 0, vc: 0, vp: 0, settings: normSettings() }; }
+}
+// House-rule defaults: the machine as designed (full house edge) is the norm.
+function normSettings(s) {
+  s = s || {};
+  return {
+    gutters: s.gutters !== false,  // open side channels that swallow coins
+    pins: s.pins !== false,        // brass deflector pins that scatter the pile
+    ring: s.ring !== false,        // the lucky ring that pays ×3
+    volley: s.volley !== false,    // the volley skill (multi-coin drop)
+  };
 }
 let saveTimer = 0;
 function persist() {
@@ -101,7 +120,7 @@ function persist() {
     try {
       localStorage.setItem('midway_save', JSON.stringify(
         { balance, totalWon, muted: muteState, lastTip, drops: dropCount,
-          vc: volleyCharges, vp: volleyProgress }));
+          vc: volleyCharges, vp: volleyProgress, settings: SETTINGS }));
     } catch { /* private mode */ }
   }, 250);
 }
@@ -121,6 +140,7 @@ async function boot() {
   bindUI();
   els.boot.textContent = 'the machine is running';
   els.enter.hidden = false;
+  els.rules.hidden = false;
   requestAnimationFrame(tick);
 }
 
@@ -233,16 +253,18 @@ function buildMachine() {
     mesh.position.set(px, FIELD_TOP + 1.5, pegZ);
     mesh.castShadow = true;
     scene.add(mesh);
-    world.createCollider(
+    const col = world.createCollider(
       RAPIER.ColliderDesc.cylinder(1.5, 0.7)
         .setTranslation(px, FIELD_TOP + 1.5, pegZ)
         .setFriction(0.15).setRestitution(0.55));
+    pegHandles.push({ mesh, col });
   }
 
   // Play field platform (felt-covered) — extends back underneath the pusher.
   // Narrower than the cabinet: the strips between the felt edge and the side
   // walls are open channels, the house's cut, like on a real penny falls.
   staticBox(PLAY_HALF_W, 3, 24.5, 0, FIELD_TOP - 3, -9.5, feltMat);
+  const railMat = new THREE.MeshStandardMaterial({ color: 0x101c22, roughness: 0.85, metalness: 0.1 });
   for (const sx of [-1, 1]) {
     // Brass lip marking the drop-off.
     const lip = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 49), trimMat);
@@ -255,6 +277,19 @@ function buildMachine() {
     danger.rotation.x = -Math.PI / 2;
     danger.position.set(sx * 21.5, 12, -9.5);
     scene.add(danger);
+    gutterGlows.push(danger);
+
+    // Sealing rail: a low kerb flush with the felt edge that closes the
+    // channel when the house lets you play the "no side holes" rule.
+    const rMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 5, 49), railMat);
+    rMesh.position.set(sx * (PLAY_HALF_W + 0.45), FIELD_TOP + 0.5, -9.5);
+    rMesh.castShadow = rMesh.receiveShadow = true;
+    scene.add(rMesh);
+    const rCol = world.createCollider(
+      RAPIER.ColliderDesc.cuboid(0.45, 2.5, 24.5)
+        .setTranslation(sx * (PLAY_HALF_W + 0.45), FIELD_TOP + 0.5, -9.5)
+        .setFriction(0.45).setRestitution(0.05));
+    gutterCovers.push({ mesh: rMesh, col: rCol });
   }
 
   // Side walls.
@@ -356,6 +391,18 @@ function buildMachine() {
 
   buildRing();
   buildNeighbors();
+  applySettings();
+}
+
+// Reflect the current house rules onto the live machine — swap meshes and
+// enable/disable colliders. Safe to call any time (menu toggle or boot).
+function applySettings() {
+  for (const { mesh, col } of pegHandles) { mesh.visible = SETTINGS.pins; col.setEnabled(SETTINGS.pins); }
+  for (const { mesh, col } of gutterCovers) { mesh.visible = !SETTINGS.gutters; col.setEnabled(!SETTINGS.gutters); }
+  for (const g of gutterGlows) g.visible = SETTINGS.gutters;
+  for (const col of ringColliders) col.setEnabled(SETTINGS.ring);
+  if (ringMesh) ringMesh.visible = SETTINGS.ring;
+  if (els.volleyWrap) els.volleyWrap.style.display = SETTINGS.volley ? '' : 'none';
 }
 
 // The rest of the arcade: neighbouring machines at the edge of vision.
@@ -441,12 +488,12 @@ function buildRing() {
     const a = (i / segs) * Math.PI * 2;
     const tangent = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a));
     const q = new THREE.Quaternion().setFromUnitVectors(up, tangent);
-    world.createCollider(
+    ringColliders.push(world.createCollider(
       RAPIER.ColliderDesc.capsule(RING_R * Math.sin(Math.PI / segs), 0.45)
         .setTranslation(Math.cos(a) * RING_R, 0, Math.sin(a) * RING_R)
         .setRotation({ x: q.x, y: q.y, z: q.z, w: q.w })
         .setFriction(0.2)
-        .setRestitution(0.35), ringBody);
+        .setRestitution(0.35), ringBody));
   }
 
   ringMesh = new THREE.Group();
@@ -754,7 +801,7 @@ function updateCoins(nowMs) {
     // Threading the lucky ring gilds the coin — it will pay triple. The
     // crossing point is interpolated between frames so fast coins can't
     // tunnel past the check.
-    if (c.state === 'field' && !c.charged && c.prev.y > RING_Y && p.y <= RING_Y) {
+    if (SETTINGS.ring && c.state === 'field' && !c.charged && c.prev.y > RING_Y && p.y <= RING_Y) {
       const k = (c.prev.y - RING_Y) / (c.prev.y - p.y);
       const cx = c.prev.x + (p.x - c.prev.x) * k;
       const cz = c.prev.z + (p.z - c.prev.z) * k;
@@ -1015,6 +1062,134 @@ function buildHelp() {
 // ---------------------------------------------------------------------------
 // Input
 // ---------------------------------------------------------------------------
+// Animated vignettes for each house-rule card. Each painter is called every
+// frame with a time parameter (seconds) — the coin actually moves so the card
+// previews the mechanic. Same canvas idiom as the help modal so the menu and
+// the field guide share a visual language.
+const rulePainters = {
+  gutters: (g, S, t) => {
+    // Sliver of felt with red gutters — a coin walks right and tumbles in.
+    g.fillStyle = '#142229';
+    g.fillRect(S * 0.16, S * 0.22, S * 0.68, S * 0.56);
+    g.fillStyle = '#5a1a18';
+    g.fillRect(S * 0.06, S * 0.22, S * 0.10, S * 0.56);
+    g.fillRect(S * 0.84, S * 0.22, S * 0.10, S * 0.56);
+    // pulsing danger glow in the gutter
+    const pulse = 0.55 + 0.35 * Math.sin(t * 3.5);
+    g.fillStyle = `rgba(200,60,50,${pulse * 0.5})`;
+    g.fillRect(S * 0.06, S * 0.22, S * 0.10, S * 0.56);
+    g.fillRect(S * 0.84, S * 0.22, S * 0.10, S * 0.56);
+    g.strokeStyle = '#b08a3e'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(S * 0.16, S * 0.22); g.lineTo(S * 0.16, S * 0.78);
+    g.moveTo(S * 0.84, S * 0.22); g.lineTo(S * 0.84, S * 0.78); g.stroke();
+    // Coin travels left → right on a 2.4s loop, shrinks as it falls in.
+    const cyc = (t % 2.4) / 2.4;
+    const x = S * (0.22 + cyc * 0.72);
+    const inGutter = x > S * 0.84;
+    const fall = inGutter ? Math.min(1, (x - S * 0.84) / (S * 0.08)) : 0;
+    const rx = 7 * (1 - fall * 0.6), ry = 3.4 * (1 - fall * 0.8);
+    g.fillStyle = '#d9a441';
+    g.shadowColor = 'rgba(232,180,90,0.7)'; g.shadowBlur = 8;
+    g.beginPath(); g.ellipse(x, S * 0.5 + fall * 3, rx, ry, 0, 0, Math.PI * 2); g.fill();
+    g.shadowBlur = 0;
+  },
+  pins: (g, S, t) => {
+    // Overhead view — a coin drops from top and ricochets off a pin.
+    g.fillStyle = '#142229';
+    g.fillRect(S * 0.08, S * 0.22, S * 0.84, S * 0.56);
+    g.fillStyle = '#b08a3e';
+    g.shadowColor = 'rgba(232,180,90,0.6)'; g.shadowBlur = 6;
+    for (let i = 0; i < 5; i++) {
+      const x = S * (0.18 + i * 0.16);
+      g.beginPath(); g.arc(x, S * 0.5, 5.5, 0, Math.PI * 2); g.fill();
+    }
+    g.shadowBlur = 0;
+    // Coin path: descends to y≈0.5 (pin row), then peels off to the side.
+    const cyc = (t % 2.2) / 2.2;
+    const pinIdx = Math.floor((t / 2.2) % 5);
+    const pinX = S * (0.18 + pinIdx * 0.16);
+    let cx, cy;
+    if (cyc < 0.45) {
+      cx = pinX; cy = S * (0.24 + cyc / 0.45 * 0.24);
+    } else {
+      const k = (cyc - 0.45) / 0.55;
+      const dir = (pinIdx % 2 === 0) ? 1 : -1;
+      cx = pinX + dir * S * 0.16 * k;
+      cy = S * (0.48 + 0.28 * k);
+    }
+    g.fillStyle = '#d9a441';
+    g.shadowColor = 'rgba(232,180,90,0.7)'; g.shadowBlur = 8;
+    g.beginPath(); g.ellipse(cx, cy, 5.5, 2.6, 0, 0, Math.PI * 2); g.fill();
+    g.shadowBlur = 0;
+  },
+  ring: (g, S, t) => {
+    // Brass ring swings side-to-side, a coin drops through the middle.
+    const swing = Math.sin(t * 1.8);
+    const rx = S / 2 + swing * S * 0.14;
+    g.strokeStyle = '#d8b25c'; g.lineWidth = 7;
+    g.shadowColor = 'rgba(232,180,90,0.8)'; g.shadowBlur = 14;
+    g.beginPath(); g.ellipse(rx, S * 0.6, S * 0.28, S * 0.12, 0, 0, Math.PI * 2); g.stroke();
+    g.shadowBlur = 0;
+    // Coin drop cycle 2.6s, threads the ring at t≈0.55 of cycle.
+    const cyc = (t % 2.6) / 2.6;
+    const cx = rx;                                   // dropper follows the ring
+    const cy = S * (0.14 + cyc * 0.72);
+    const threading = cyc > 0.48 && cyc < 0.68;
+    g.fillStyle = threading ? '#f2e5c4' : '#d9a441';
+    g.shadowColor = threading ? 'rgba(255,240,180,0.9)' : 'rgba(232,180,90,0.7)';
+    g.shadowBlur = threading ? 14 : 8;
+    g.beginPath(); g.ellipse(cx, cy, 6.5, 3, 0, 0, Math.PI * 2); g.fill();
+    g.shadowBlur = 0;
+    g.fillStyle = threading ? '#e8c476' : '#9b8a6a';
+    g.font = 'bold 15px Georgia, serif'; g.textAlign = 'center';
+    g.fillText('×3', S * 0.82, S * 0.24);
+  },
+  volley: (g, S, t) => {
+    // Five coins launch downward with staggered timing.
+    const period = 1.8;
+    const cyc = (t % period) / period;
+    for (let i = 0; i < 5; i++) {
+      const local = (cyc - i * 0.06 + 1) % 1;
+      const x = S * (0.18 + i * 0.16);
+      const y = S * (0.18 + local * 0.68);
+      g.fillStyle = '#d9a441';
+      g.shadowColor = 'rgba(232,180,90,0.7)'; g.shadowBlur = 8;
+      g.beginPath(); g.ellipse(x, y, 7, 3.4, 0, 0, Math.PI * 2); g.fill();
+      g.shadowBlur = 0;
+      // trail behind the coin
+      const trail = g.createLinearGradient(x, y - 22, x, y - 4);
+      trail.addColorStop(0, 'rgba(217,164,65,0)');
+      trail.addColorStop(1, 'rgba(217,164,65,0.55)');
+      g.strokeStyle = trail; g.lineWidth = 2.2;
+      g.beginPath(); g.moveTo(x, y - 22); g.lineTo(x, y - 4); g.stroke();
+    }
+  },
+};
+
+let ruleAnimRunning = false;
+function startRuleAnimations() {
+  if (ruleAnimRunning) return;
+  ruleAnimRunning = true;
+  const canvases = [...els.rules.querySelectorAll('.r-art')].map(cv => ({
+    g: cv.getContext('2d'), S: cv.width, key: cv.dataset.art,
+  }));
+  const t0 = performance.now();
+  const frame = () => {
+    // Stop looping once the player steps up to the machine — menu is invisible.
+    if (els.overlay.classList.contains('gone') || els.overlay.hidden) {
+      ruleAnimRunning = false;
+      return;
+    }
+    const t = (performance.now() - t0) / 1000;
+    for (const { g, S, key } of canvases) {
+      g.clearRect(0, 0, S, S);
+      rulePainters[key](g, S, t);
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
 function bindUI() {
   if ('ontouchstart' in window) {
     els.hint.textContent = 'slide to aim · tap to drop';
@@ -1063,6 +1238,38 @@ function bindUI() {
   els.volleyWrap.addEventListener('click', dropVolley);
   refreshVolley();
 
+  // House-rule cards on the menu. Selected = the part is installed on the
+  // machine; deselected = the machine runs without it. Toggling reshapes the
+  // live simulation and repaints the card's on/off state.
+  startRuleAnimations();
+  const stateLabels = {
+    gutters: ['open', 'sealed'],
+    pins: ['installed', 'pulled'],
+    ring: ['swinging', 'stowed'],
+    volley: ['armed', 'disarmed'],
+  };
+  els.rules.querySelectorAll('.r-card').forEach(card => {
+    const key = card.dataset.rule;
+    const stateEl = card.querySelector('.r-state');
+    const paintState = () => {
+      const [on, off] = stateLabels[key];
+      card.setAttribute('aria-checked', String(!!SETTINGS[key]));
+      stateEl.textContent = SETTINGS[key] ? on : off;
+    };
+    paintState();
+    const flip = () => {
+      SETTINGS[key] = !SETTINGS[key];
+      paintState();
+      applySettings();
+      sound.clink(0.35, 0);
+      persist();
+    };
+    card.addEventListener('click', flip);
+    card.addEventListener('keydown', (e) => {
+      if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); flip(); }
+    });
+  });
+
   els.enter.addEventListener('click', () => {
     const firstTime = !started;
     sound.unlock();
@@ -1071,7 +1278,7 @@ function bindUI() {
     els.home.hidden = false;
     started = true;
     refreshHud();
-    if (firstTime) setTimeout(() => toast('THREAD THE RING — PAYS ×3'), 4000);
+    if (firstTime && SETTINGS.ring) setTimeout(() => toast('THREAD THE RING — PAYS ×3'), 4000);
   });
 
   els.home.addEventListener('click', () => {
@@ -1080,6 +1287,7 @@ function bindUI() {
     els.home.hidden = true;
     els.enter.textContent = 'return to the machine';
     closeHelp();
+    startRuleAnimations();
   });
 
   els.mute.addEventListener('click', () => {
@@ -1137,7 +1345,7 @@ function tryDrop() {
 
 // A whole handful at once — the skill you earn by winning.
 function dropVolley() {
-  if (!started || !els.helpModal.hidden) return;
+  if (!started || !SETTINGS.volley || !els.helpModal.hidden) return;
   if (volleyCharges <= 0 || volleyCooldown > 0) {
     if (volleyCharges <= 0) sound.denied();
     return;
