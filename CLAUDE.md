@@ -17,3 +17,21 @@ npm run preview   # serve the production build locally
 ```
 
 Use `./build.sh` before shipping because it refreshes generated public assets and commit-linked build metadata.
+
+## Coding Style & Naming Conventions
+
+Use modern ES modules, two-space indentation, semicolons, and the existing plain JavaScript style. Keep changes surgical and local to the requested behavior. Prefer descriptive constants in `UPPER_SNAKE_CASE` for tuning values and camelCase for functions and mutable state. Keep CSS selectors consistent with the current ID/class patterns in `index.html`.
+
+## Testing Guidelines
+
+There is no automated test suite or lint script configured. Verify changes with `npm run build`. For UI changes, also run `npm run dev`, inspect the app in a browser, and confirm the specific interaction or layout you changed. For icon/social-preview work, run `./build.sh` and confirm the expected files exist in `dist/`.
+
+## Commit & Pull Request Guidelines
+
+Recent history uses short imperative commit subjects, for example `Update README` and `Add GitHub control button`. Keep commit messages concise and focused on one change.
+
+Pull requests should include a brief summary, the commands run, and screenshots or browser notes for visual changes. Mention any generated assets touched by `build.sh` and avoid committing unrelated local output.
+
+## Configuration & Deployment Notes
+
+The deployed origin is baked into social metadata in `index.html`, and build links are derived in `vite.config.js`/`build.sh`. Do not add secrets; all persistence is local browser storage.
